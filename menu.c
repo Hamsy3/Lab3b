@@ -48,14 +48,26 @@ int menu() {
     table table;
     table.msize = 0;
     table.csize = 0;
-    do {
-        printf("Please write size of vector\n");
-        if (input_int(&table.msize) == 0) {
-            printf("EOF\n");
-            return 1;
-        }
-    } while (table.msize <=0);
-    table.items = calloc(table.msize, sizeof(item));
+    table.name_of_info_file = NULL;
+    int input = choice_input();
+    switch (input) {
+        case 1:
+            load_table_from_file(&table);
+            break;
+        case 2:
+            do {
+                printf("Please write size of vector\n");
+                if (input_int(&table.msize) == 0) {
+                    printf("EOF\n");
+                    return 1;
+                }
+            } while (table.msize <=0);
+            table.items = calloc(table.msize, sizeof(item));
+            break;
+        default:
+            
+            break;
+    }
     do {
     choice = menu_action();
     switch (choice) {
@@ -72,6 +84,7 @@ int menu() {
             } else if (inserted == -2) {
                 printf ("All positions are busy\n");
             }
+            free(info);
             break;
         case 2:
             printf("Write a key\n");
@@ -88,13 +101,26 @@ int menu() {
                 printf("Key not found\n");
             } else {
                 printf ("The index of element: %d\n", searched);
-                printf("Info: %s\n",table.items[searched].info);
+                char *info = NULL;
+                info = calloc(table.items[searched].len_info, sizeof(char));
+                FILE *fd;
+                fd = fopen(table.name_of_info_file, "r+b");
+                fseek(fd, table.items[searched].offset_info, SEEK_SET);
+                fread(info, sizeof(char), table.items[searched].len_info, fd);
+                fclose(fd);
+                printf("Info: %s\n",info);
+                free(info);
             }
             break;
         case 4:
             for (int i = 0; i<table.msize; ++i) {
-                printf("%d %s %s", table.items[i].busy, table.items[i].key, table.items[i].info);
-                printf("\n");
+                if (table.items[i].busy == 1) {
+                    printf("%s", table.items[i].key);
+                    printf("\n");
+                } else {
+                    printf("%s", "NULL");
+                    printf("\n");
+                }
             }
             break;
 
@@ -102,6 +128,7 @@ int menu() {
             break;
     }
     } while (choice != 0);
+    save_table_to_file(table);
     free_table(table);
     free(table.items);
     return 0;
